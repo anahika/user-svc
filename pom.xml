@@ -15,7 +15,8 @@
 	<description>user-svc</description>
 	<properties>
 		<java.version>17</java.version>
-		<camel.version>3.3.0</camel.version>
+		<camel.version>4.0.1</camel.version>
+		<spring-boot-version>3.2.2</spring-boot-version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -38,7 +39,6 @@
 		</dependency>
 
 		<!-- camel dependencies -->
-
 		<dependency>
 			<groupId>org.apache.camel.springboot</groupId>
 			<artifactId>camel-spring-boot-starter</artifactId>

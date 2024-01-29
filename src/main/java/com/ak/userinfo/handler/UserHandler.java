@@ -1,46 +1,48 @@
 package com.ak.userinfo.handler;
 
 import com.ak.userinfo.domain.User;
-import com.ak.userinfo.service.UserService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
+import org.apache.camel.ProducerTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static org.springframework.web.reactive.function.server.ServerResponse.ok;
+import static com.ak.userinfo.constants.Constants.ADD_USER;
+import static com.ak.userinfo.constants.Constants.FIND_ALL;
+import static com.ak.userinfo.constants.Constants.FIND_BY_ID;
 
 @Component
 @Slf4j
+@AllArgsConstructor
 public class UserHandler {
+    private ProducerTemplate producerTemplate;
 
-    private final UserService userService;
-
-    public UserHandler(UserService userService) {
-        this.userService = userService;
-    }
-
-//    TODO for this scenario I am supposed to convert Mono object into the user, how can we do that??
-//     .block is not recommended, .subscribe is also not giving me the desired output;
     public Mono<ServerResponse> addUser(ServerRequest request) {
-        Mono<User> user = request.bodyToMono(User.class);
         log.info("storing user in DB... ");
-        return user.flatMap(user1-> ServerResponse.ok().body(userService.addUser(user1), User.class).log());
+        Mono<User> storedUser = producerTemplate.requestBody(ADD_USER, request.bodyToMono(User.class), Mono.class);
+        return storedUser
+                .flatMap(user1 -> ServerResponse.ok().body(user1, User.class).log());
     }
 
     public Mono<ServerResponse> getUserById(ServerRequest request) {
         long userId = Integer.parseInt(request.pathVariable("userId"));
         log.info("get request for given userId: " + userId);
-        return userService.findByID(userId)
-                .flatMap(user -> ok().contentType(MediaType.APPLICATION_JSON).bodyValue(user))
+        Mono<User> user = producerTemplate.requestBody(FIND_BY_ID, userId, Mono.class);
+        return user
+                .flatMap(user1 -> ServerResponse.ok().body(user, User.class))
                 .switchIfEmpty(ServerResponse.notFound().build()).log();
+
     }
 
     public Mono<ServerResponse> getAllUsers(ServerRequest request) {
-        Flux<User> users = userService.findAll();
-        return ServerResponse.ok().body(users, User.class).log();
+        Flux<User> users = producerTemplate.requestBody(FIND_ALL, request, Flux.class);
+        return ServerResponse.ok()
+                .body(users.collectList(), User.class)
+                .switchIfEmpty(ServerResponse.noContent().build())
+                .log();
     }
 
 }
