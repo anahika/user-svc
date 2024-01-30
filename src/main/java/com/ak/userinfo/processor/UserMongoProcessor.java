@@ -16,6 +16,8 @@ public class UserMongoProcessor {
     private final UserRepository userRepository;
 
     public Mono<User> getById(Exchange exchange){
+//        todo should i just return it simply or put inside the exchange out event;???
+//         it gave an error on setting the exchange only, do we need to convert it somewhere?
         return userRepository.findById(exchange.getMessage().getBody(Long.class));
     }
 
@@ -24,8 +26,7 @@ public class UserMongoProcessor {
     }
 
     public Mono<User> addUser(Exchange exchange){
-        log.info("exchange", exchange);
-        User user = exchange.getMessage().getBody(User.class);
+        User user = exchange.getIn().getBody(User.class);
         return userRepository.save(user);
     }
 

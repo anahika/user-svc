@@ -22,9 +22,12 @@ public class UserHandlerTest {
     @Test
     public void getUserByIdTest(){
         MockServerRequest serverRequest = MockServerRequest.builder()
-                                            .method(HttpMethod.GET)
-                                            .pathVariable("userId","1")
-                                            .body(Mono.just("/get-user/{userId}"));
+                                            .method(HttpMethod.POST)
+                                            .body(Mono.just("{\n" +
+                                                    "    \"userId\": 4,\n" +
+                                                    "    \"name\": \"Anshika\",\n" +
+                                                    "    \"status\": \"ACTIVE\"\n" +
+                                                    "}"));
         userHandler.addUser(serverRequest);
     }
 

@@ -22,9 +22,16 @@ public class UserHandler {
 
     public Mono<ServerResponse> addUser(ServerRequest request) {
         log.info("storing user in DB... ");
-        Mono<User> storedUser = producerTemplate.requestBody(ADD_USER, request.bodyToMono(User.class), Mono.class);
-        return storedUser
-                .flatMap(user1 -> ServerResponse.ok().body(user1, User.class).log());
+        Mono<User> user = request.bodyToMono(User.class);
+        return user.flatMap(user1 ->
+        {
+            Mono<User> storedUser = producerTemplate.requestBody(ADD_USER, user1, Mono.class);
+
+            return storedUser
+                    .flatMap(savedUser -> ServerResponse.ok()
+                            .body(Mono.just(savedUser), User.class))
+                    .log();
+        });
     }
 
     public Mono<ServerResponse> getUserById(ServerRequest request) {
@@ -32,16 +39,25 @@ public class UserHandler {
         log.info("get request for given userId: " + userId);
         Mono<User> user = producerTemplate.requestBody(FIND_BY_ID, userId, Mono.class);
         return user
-                .flatMap(user1 -> ServerResponse.ok().body(user, User.class))
-                .switchIfEmpty(ServerResponse.notFound().build()).log();
+                .flatMap(user1 -> ServerResponse.ok().body(Mono.just(user1), User.class))
+                .switchIfEmpty(ServerResponse.notFound().build())
+                .log();
 
     }
 
     public Mono<ServerResponse> getAllUsers(ServerRequest request) {
         Flux<User> users = producerTemplate.requestBody(FIND_ALL, request, Flux.class);
-        return ServerResponse.ok()
-                .body(users.collectList(), User.class)
-                .switchIfEmpty(ServerResponse.noContent().build())
+        return users
+                .collectList()
+                .flatMap(list -> {
+                    if (list.isEmpty()) {
+                        return ServerResponse
+                                .noContent().build();
+                    } else {
+                        return ServerResponse.ok()
+                                .body(Mono.just(list), User.class);
+                    }
+                })
                 .log();
     }
 
